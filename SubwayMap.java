@@ -121,6 +121,99 @@ class SubwaySystem {
         findAllPaths(start, end, new HashSet<>(), new ArrayList<>(), paths);
         return paths;
     }
+     private void findAllPaths(Station current, Station end, Set<Station> visited, List<Station> path, List<List<Station>> paths) {
+        visited.add(current);
+        path.add(current);
+
+        if (current.equals(end)) {
+            paths.add(new ArrayList<>(path));
+        } else {
+            for (LineSegment segment : lineSegments) {
+                if (segment.from.equals(current) && !visited.contains(segment.to)) {
+                    findAllPaths(segment.to, end, visited, path, paths);
+                }
+            }
+        }
+
+        path.remove(path.size() - 1);
+        visited.remove(current);
+    }
+
+    public List<Station> getShortestPath(String startName, String endName) {
+        Station start = stations.get(startName);
+        Station end = stations.get(endName);
+        if (start == null || end == null) {
+            throw new IllegalArgumentException("站点不存在: " + startName + " 或 " + endName);
+        }
+
+        Map<Station, Double> distances = new HashMap<>();
+        Map<Station, Station> previousStations = new HashMap<>();
+        PriorityQueue<Station> queue = new PriorityQueue<>(Comparator.comparingDouble(distances::get));
+
+        for (Station station : stations.values()) {
+            if (station.equals(start)) {
+                distances.put(station, 0.0);
+            } else {
+                distances.put(station, Double.MAX_VALUE);
+            }
+            queue.add(station);
+        }
+
+        while (!queue.isEmpty()) {
+            Station current = queue.poll();
+
+            for (LineSegment segment : lineSegments) {
+                if (segment.from.equals(current)) {
+                    Station neighbor = segment.to;
+                    double newDist = distances.get(current) + segment.distance;
+                    if (newDist < distances.get(neighbor)) {
+                        queue.remove(neighbor);
+                        distances.put(neighbor, newDist);
+                        previousStations.put(neighbor, current);
+                        queue.add(neighbor);
+                    }
+                }
+            }
+        }
+
+        List<Station> path = new ArrayList<>();
+        for (Station at = end; at != null; at = previousStations.get(at)) {
+            path.add(at);
+        }
+        Collections.reverse(path);
+        return path;
+    }
+
+    public void printPath(List<Station> path) {
+        for (int i = 0; i < path.size() - 1; i++) {
+            System.out.println(path.get(i).name + " -> " + path.get(i + 1).name);
+        }
+    }
+
+    public double calculateFare(List<Station> path) {
+        double totalDistance = 0;
+        for (int i = 0; i < path.size() - 1; i++) {
+            for (LineSegment segment : lineSegments) {
+                if (segment.from.equals(path.get(i)) && segment.to.equals(path.get(i + 1))) {
+                    totalDistance += segment.distance;
+                    break;
+                }
+            }
+        }
+        return totalDistance;
+    }
+
+    public double calculateFareWithDiscount(List<Station> path, String ticketType) {
+        double baseFare = calculateFare(path);
+        switch (ticketType) {
+            case "武汉通":
+                return baseFare * 0.9;
+            case "日票":
+                return 0;
+            default:
+                return baseFare;
+        }
+    }
 }
 
 
@@ -171,6 +264,57 @@ public class SubwayMap {
                             System.out.println(e.getMessage());
                         }
                         break;
+                         case 4:
+                        System.out.println("输入起点站:");
+                        startStation = scanner.nextLine();
+                        System.out.println("输入终点站:");
+                        endStation = scanner.nextLine();
+
+                        try {
+                            List<Station> shortestPath = subwaySystem.getShortestPath(startStation, endStation);
+                            System.out.println("Shortest Path: " + shortestPath);
+                            subwaySystem.printPath(shortestPath);
+                        } catch (IllegalArgumentException e) {
+                            System.out.println(e.getMessage());
+                        }
+                        break;
+
+                    case 5:
+                        System.out.println("输入起点站:");
+                        startStation = scanner.nextLine();
+                        System.out.println("输入终点站:");
+                        endStation = scanner.nextLine();
+
+                        try {
+                            List<Station> path = subwaySystem.getShortestPath(startStation, endStation);
+                            double fare = subwaySystem.calculateFare(path);
+                            System.out.println("Fare: " + fare);
+                        } catch (IllegalArgumentException e) {
+                            System.out.println(e.getMessage());
+                        }
+                        break;
+
+                    case 6:
+                        System.out.println("输入起点站:");
+                        startStation = scanner.nextLine();
+                        System.out.println("输入终点站:");
+                        endStation = scanner.nextLine();
+                        System.out.println("输入支付方式 (普通, 武汉通, 日票):");
+                        String ticketType = scanner.nextLine();
+
+                        try {
+                            List<Station> path = subwaySystem.getShortestPath(startStation, endStation);
+                            double discountedFare = subwaySystem.calculateFareWithDiscount(path, ticketType);
+                            System.out.println("Discounted Fare (" + ticketType + "): " + discountedFare);
+                        } catch (IllegalArgumentException e) {
+                            System.out.println(e.getMessage());
+                        }
+                        break;
+
+                    case 7:
+                        scanner.close();
+                        return;
+
                     default:
                         System.out.println("无效选择，请重新选择。");
                 }
