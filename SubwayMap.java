@@ -227,6 +227,12 @@ public class SubwayMap {
                 System.out.println("1. 输出地铁中转站");
                 System.out.println("2. 查找附近的站点");
                 System.out.println("3. 查找所有路径");
+                System.out.println("4. 查找最短路径");
+                System.out.println("5. 计算乘车费用");
+                System.out.println("6. 计算不同票种的票价");
+                System.out.println("7. 退出");
+
+
                 int choice = scanner.nextInt();
                 scanner.nextLine(); // consume newline
 
